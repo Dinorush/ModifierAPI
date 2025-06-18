@@ -4,7 +4,7 @@ using GTFO.API;
 
 namespace MovementSpeedAPI
 {
-    [BepInPlugin("Dinorush." + MODNAME, MODNAME, "1.0.0")]
+    [BepInPlugin("Dinorush." + MODNAME, MODNAME, "1.1.0")]
     internal sealed class EntryPoint : BasePlugin
     {
         public const string MODNAME = "MovementSpeedAPI";
