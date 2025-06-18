@@ -25,19 +25,19 @@ namespace MovementSpeedAPI
         /// </summary>
         /// <param name="mod">The value of the modifier.</param>
         /// <param name="layer">The layer within the group to place the modifier on.</param>
-        /// <param name="groupName">The group to put the modifier in. Layers function per-group. Separate groups are multiplied together for the final result.</param>
+        /// <param name="group">The group to put the modifier in. Layers function per-group. Separate groups are multiplied together for the final result.</param>
         /// <returns>
         /// The modifier object created.
         /// </returns>
-        public static ISpeedModifier AddModifier(float mod, StackLayer layer = StackLayer.Multiply, string groupName = DefaultGroup)
+        public static ISpeedModifier AddModifier(float mod, StackLayer layer = StackLayer.Multiply, string group = DefaultGroup)
         {
             if (layer < 0 || (int)layer >= NumLayers)
                 throw new ArgumentException($"Invalid layer {layer} provided.");
 
-            if (!_groups.TryGetValue(groupName, out var group))
-                _groups.Add(groupName, group = new());
+            if (!_groups.TryGetValue(group, out var groupMod))
+                _groups.Add(group, groupMod = new());
 
-            return group.Add(mod, layer);
+            return groupMod.Add(mod, layer);
         }
 
         internal static void Reset()
