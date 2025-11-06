@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace MovementSpeedAPI
 {
@@ -8,20 +7,14 @@ namespace MovementSpeedAPI
     {
         private readonly static int NumLayers = (int)Enum.GetValues<StackLayer>()[^1] + 1;
 
-        private readonly HashSet<ISpeedModifier>[] _layers = new HashSet<ISpeedModifier>[NumLayers];
-        private bool _useOverride = false;
-        private float _overrideMod = 1f;
-        private float _maxMod = 1f;
-        private float _minMod = 1f;
-        private float _multMod = 1f;
-        private float _addMod = 1f;
-        public float Mod { get; private set; } = 1f;
+        private readonly HashSet<SpeedModifier>[] _layers = new HashSet<SpeedModifier>[NumLayers];
+        private StackValue _mod = new();
+        public StackValue Mod => _mod;
 
         public ISpeedModifier Add(float mod, StackLayer layer = StackLayer.Multiply)
         {
             var modifier = new SpeedModifier(mod, layer, this);
-            GetLayer(layer).Add(modifier);
-            Refresh(layer);
+            modifier.Enable();
             return modifier;
         }
 
@@ -32,60 +25,23 @@ namespace MovementSpeedAPI
                 if (layer == null) continue;
 
                 foreach (var modifier in layer)
-                    ((SpeedModifier)modifier).Active = false;
+                    modifier.Active = false;
                 layer.Clear();
             }
 
-            _useOverride = false;
-            _overrideMod = 1f;
-            _maxMod = 1f;
-            _minMod = 1f;
-            _multMod = 1f;
-            _addMod = 1f;
-            Mod = 1f;
+            _mod.Reset();
         }
 
-        private HashSet<ISpeedModifier> GetLayer(StackLayer layer) => _layers[(int)layer] ?? (_layers[(int)layer] = new());
+        private HashSet<SpeedModifier> GetLayer(StackLayer layer) => _layers[(int)layer] ?? (_layers[(int)layer] = new());
 
         private void Refresh(StackLayer layer)
         {
-            switch (layer)
-            {
-                case StackLayer.Override:
-                    var modLayer = GetLayer(StackLayer.Override);
-                    if (modLayer.Count > 0)
-                    {
-                        _overrideMod = modLayer.First().Mod;
-                        _useOverride = true;
-                    }
-                    else
-                    {
-                        _overrideMod = 1f;
-                        _useOverride = false;
-                    }
-                    break;
-                case StackLayer.Max:
-                    _maxMod = GetLayer(StackLayer.Max).Max(modifier => modifier.Mod);
-                    break;
-                case StackLayer.Min:
-                    _minMod = GetLayer(StackLayer.Min).Min(modifier => modifier.Mod);
-                    break;
-                case StackLayer.Multiply:
-                    _multMod = 1f;
-                    foreach (var modifier in GetLayer(StackLayer.Multiply))
-                        _multMod *= modifier.Mod;
-                    break;
-                case StackLayer.Add:
-                    _addMod = 1f;
-                    foreach (var modifier in GetLayer(StackLayer.Add))
-                        _addMod += modifier.Mod - 1f;
-                    break;
-            }
+            if (_layers[(int)layer] == null) return;
 
-            float lastMod = Mod;
-            Mod = _useOverride ? _overrideMod : _maxMod * _minMod * _multMod * _addMod;
-            if (lastMod != Mod)
-                MoveSpeedAPI.Refresh();
+            _mod.Reset(layer);
+            foreach (var modifier in GetLayer(layer))
+                _mod.Add(modifier.Mod, layer);
+            MoveSpeedAPI.Refresh();
         }
 
         public class SpeedModifier : ISpeedModifier
@@ -111,7 +67,7 @@ namespace MovementSpeedAPI
 
             public SpeedModifier(float mod, StackLayer layer, ModifierGroup parent)
             {
-                Active = true;
+                Active = false;
                 _mod = mod;
                 Layer = layer;
                 _parent = parent;

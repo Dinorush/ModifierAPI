@@ -15,10 +15,11 @@ namespace MovementSpeedAPI
         private readonly static Dictionary<string, ModifierGroup> _groups = new();
 
         private static PlayerDataBlock _playerData = null!;
-        private static float _baseWalkSpeed = 0;
+        private static float _baseWalkSpeed;
         private static float _baseRunSpeed;
         private static float _baseCrouchSpeed;
         private static float _baseAirSpeed;
+        private static float _lastScale;
 
         /// <summary>
         /// Adds a local movement modifier, returning the modifier object.
@@ -42,28 +43,36 @@ namespace MovementSpeedAPI
 
         internal static void Reset()
         {
+            _lastScale = 1f;
             foreach (var group in _groups.Values)
                 group.Reset();
+
+            if (_playerData == null) return;
+
+            _playerData.walkMoveSpeed = _baseWalkSpeed;
+            _playerData.runMoveSpeed = _baseRunSpeed;
+            _playerData.crouchMoveSpeed = _baseCrouchSpeed;
+            _playerData.airMoveSpeed = _baseAirSpeed;
         }
 
         internal static void Refresh()
         {
-            float mod = 1f;
+            float scale = 1f;
             foreach (var group in _groups.Values)
-                mod *= group.Mod;
+                scale *= group.Mod.Value;
 
-            CacheBaseSpeed();
-            _playerData.walkMoveSpeed = _baseWalkSpeed * mod;
-            _playerData.runMoveSpeed = _baseRunSpeed * mod;
-            _playerData.crouchMoveSpeed = _baseCrouchSpeed * mod;
-            _playerData.airMoveSpeed = _baseAirSpeed * mod;
+            if (_lastScale == scale || _playerData == null) return;
+            _lastScale = scale;
+
+            _playerData.walkMoveSpeed = _baseWalkSpeed * scale;
+            _playerData.runMoveSpeed = _baseRunSpeed * scale;
+            _playerData.crouchMoveSpeed = _baseCrouchSpeed * scale;
+            _playerData.airMoveSpeed = _baseAirSpeed * scale;
         }
 
-        private static void CacheBaseSpeed()
+        internal static void CachePlayerData(PlayerDataBlock data)
         {
-            if (_baseWalkSpeed != 0) return;
-
-            _playerData = PlayerDataBlock.GetBlock(1u);
+            _playerData = data;
             _baseWalkSpeed = _playerData.walkMoveSpeed;
             _baseRunSpeed = _playerData.runMoveSpeed;
             _baseCrouchSpeed = _playerData.crouchMoveSpeed;
