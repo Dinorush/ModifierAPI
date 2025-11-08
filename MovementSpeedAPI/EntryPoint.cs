@@ -5,7 +5,7 @@ using HarmonyLib;
 
 namespace MovementSpeedAPI
 {
-    [BepInPlugin("Dinorush." + MODNAME, MODNAME, "1.1.1")]
+    [BepInPlugin("Dinorush." + MODNAME, MODNAME, "1.1.2")]
     internal sealed class EntryPoint : BasePlugin
     {
         public const string MODNAME = "MovementSpeedAPI";

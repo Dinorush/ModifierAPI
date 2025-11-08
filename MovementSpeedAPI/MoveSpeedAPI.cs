@@ -72,6 +72,8 @@ namespace MovementSpeedAPI
 
         internal static void CachePlayerData(PlayerDataBlock data)
         {
+            if (_playerData != null && _playerData.Pointer == data.Pointer) return;
+
             _playerData = data;
             _baseWalkSpeed = _playerData.walkMoveSpeed;
             _baseRunSpeed = _playerData.runMoveSpeed;
