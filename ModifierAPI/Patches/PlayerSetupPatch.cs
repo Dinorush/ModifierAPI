@@ -1,8 +1,9 @@
 ﻿using GameData;
 using HarmonyLib;
+using ModifierAPI;
 using Player;
 
-namespace MovementSpeedAPI
+namespace ModifierAPI.Patches
 {
     [HarmonyPatch(typeof(LocalPlayerAgent))]
     internal static class PlayerSetupPatch

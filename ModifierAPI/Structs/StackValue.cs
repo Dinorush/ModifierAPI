@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace MovementSpeedAPI
+namespace ModifierAPI.Structs
 {
     internal struct StackValue
     {

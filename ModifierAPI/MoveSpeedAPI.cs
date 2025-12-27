@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace MovementSpeedAPI
+namespace ModifierAPI
 {
     public static class MoveSpeedAPI
     {
@@ -11,7 +11,6 @@ namespace MovementSpeedAPI
         /// </summary>
         public const string DefaultGroup = "Default";
 
-        private readonly static int NumLayers = (int)Enum.GetValues<StackLayer>()[^1] + 1;
         private readonly static Dictionary<string, ModifierGroup> _groups = new();
 
         private static PlayerDataBlock _playerData = null!;
@@ -22,7 +21,7 @@ namespace MovementSpeedAPI
         private static float _lastScale;
 
         /// <summary>
-        /// Adds a local movement modifier, returning the modifier object.
+        /// Adds a local movement modifier, returning the modifier object. Speed modifiers are disabled on level cleanup.
         /// </summary>
         /// <param name="mod">The value of the modifier.</param>
         /// <param name="layer">The layer within the group to place the modifier on.</param>
@@ -30,13 +29,13 @@ namespace MovementSpeedAPI
         /// <returns>
         /// The modifier object created.
         /// </returns>
-        public static ISpeedModifier AddModifier(float mod, StackLayer layer = StackLayer.Multiply, string group = DefaultGroup)
+        public static IStatModifier AddModifier(float mod, StackLayer layer = StackLayer.Multiply, string group = DefaultGroup)
         {
-            if (layer < 0 || (int)layer >= NumLayers)
+            if (layer < 0 || (int)layer >= StackLayerConst.NumLayers)
                 throw new ArgumentException($"Invalid layer {layer} provided.");
 
             if (!_groups.TryGetValue(group, out var groupMod))
-                _groups.Add(group, groupMod = new());
+                _groups.Add(group, groupMod = new(Refresh));
 
             return groupMod.Add(mod, layer);
         }

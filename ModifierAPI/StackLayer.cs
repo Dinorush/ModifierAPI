@@ -1,4 +1,6 @@
-﻿namespace MovementSpeedAPI
+﻿using System;
+
+namespace ModifierAPI
 {
     /// <summary> Used to determine how speed modifiers stack.</summary>
     public enum StackLayer
@@ -13,5 +15,11 @@
         Min,
         /// <summary> Overrides all other modifiers. If multiple overrides are applied, the chosen modifier is ambiguous.</summary>
         Override
+    }
+
+    public static class StackLayerConst
+    {
+        /// <summary> The total number of layers.</summary>
+        public static readonly int NumLayers = (int)Enum.GetValues<StackLayer>()[^1] + 1;
     }
 }

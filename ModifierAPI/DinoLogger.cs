@@ -1,6 +1,6 @@
 ﻿using BepInEx.Logging;
 
-namespace MovementSpeedAPI
+namespace ModifierAPI
 {
     internal static class DinoLogger
     {

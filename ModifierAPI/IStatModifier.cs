@@ -1,9 +1,9 @@
-﻿namespace MovementSpeedAPI
+﻿namespace ModifierAPI
 {
     /// <summary>
     /// A movement speed modifier object. Player movement speed is affected by its Mod when Active.
     /// </summary>
-    public interface ISpeedModifier
+    public interface IStatModifier
     {
         /// <summary>The value of this modifier.</summary>
         /// <value>Updates player speed when modified if Active.</value>

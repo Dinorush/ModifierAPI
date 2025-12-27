@@ -1,19 +1,21 @@
-﻿using System;
+﻿using ModifierAPI.Structs;
+using System;
 using System.Collections.Generic;
 
-namespace MovementSpeedAPI
+namespace ModifierAPI
 {
     internal class ModifierGroup
     {
-        private readonly static int NumLayers = (int)Enum.GetValues<StackLayer>()[^1] + 1;
-
-        private readonly HashSet<SpeedModifier>[] _layers = new HashSet<SpeedModifier>[NumLayers];
+        private readonly HashSet<StatModifier>[] _layers = new HashSet<StatModifier>[StackLayerConst.NumLayers];
+        private readonly Action _onRefresh;
         private StackValue _mod = new();
         public StackValue Mod => _mod;
 
-        public ISpeedModifier Add(float mod, StackLayer layer = StackLayer.Multiply)
+        public ModifierGroup(Action onRefresh) => _onRefresh = onRefresh;
+
+        public IStatModifier Add(float mod, StackLayer layer = StackLayer.Multiply)
         {
-            var modifier = new SpeedModifier(mod, layer, this);
+            var modifier = new StatModifier(mod, layer, this);
             modifier.Enable();
             return modifier;
         }
@@ -32,7 +34,7 @@ namespace MovementSpeedAPI
             _mod.Reset();
         }
 
-        private HashSet<SpeedModifier> GetLayer(StackLayer layer) => _layers[(int)layer] ?? (_layers[(int)layer] = new());
+        private HashSet<StatModifier> GetLayer(StackLayer layer) => _layers[(int)layer] ?? (_layers[(int)layer] = new());
 
         private void Refresh(StackLayer layer)
         {
@@ -41,10 +43,10 @@ namespace MovementSpeedAPI
             _mod.Reset(layer);
             foreach (var modifier in GetLayer(layer))
                 _mod.Add(modifier.Mod, layer);
-            MoveSpeedAPI.Refresh();
+            _onRefresh();
         }
 
-        public class SpeedModifier : ISpeedModifier
+        public class StatModifier : IStatModifier
         {
             private float _mod = 0f;
             public float Mod
@@ -65,7 +67,7 @@ namespace MovementSpeedAPI
 
             private readonly ModifierGroup _parent;
 
-            public SpeedModifier(float mod, StackLayer layer, ModifierGroup parent)
+            public StatModifier(float mod, StackLayer layer, ModifierGroup parent)
             {
                 Active = false;
                 _mod = mod;
