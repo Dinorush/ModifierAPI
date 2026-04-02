@@ -5,7 +5,7 @@ using HarmonyLib;
 
 namespace ModifierAPI
 {
-    [BepInPlugin("Dinorush." + MODNAME, MODNAME, "1.2.1")]
+    [BepInPlugin("Dinorush." + MODNAME, MODNAME, "1.2.2")]
     internal sealed class EntryPoint : BasePlugin
     {
         public const string MODNAME = "ModifierAPI";

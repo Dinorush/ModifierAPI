@@ -1,6 +1,5 @@
 ﻿using GameData;
 using Gear;
-using Player;
 using System;
 using System.Collections.Generic;
 
@@ -14,13 +13,17 @@ namespace ModifierAPI
         public const string DefaultGroup = "Default";
 
         private readonly static Dictionary<string, ModifierGroup> _groups = new();
+        private readonly static Dictionary<string, ModifierGroup> _animGroups = new();
         private readonly static Dictionary<string, ModifierGroup> _lightGroups = new();
         private readonly static Dictionary<string, ModifierGroup> _chargedGroups = new();
+        private readonly static Dictionary<string, ModifierGroup> _chargedAnimGroups = new();
         private readonly static Dictionary<string, ModifierGroup> _pushGroups = new();
 
         private static float _mod = 1f;
+        private static float _animMod = 1f;
         private static float _lightMod = 1f;
         private static float _chargedMod = 1f;
+        private static float _chargedAnimMod = 1f;
         private static float _pushMod = 1f;
         private static MeleeWeaponFirstPerson? _cachedMelee;
 
@@ -34,6 +37,18 @@ namespace ModifierAPI
         /// The modifier object created.
         /// </returns>
         public static IStatModifier AddModifier(float mod, StackLayer layer = StackLayer.Multiply, string group = DefaultGroup) => AddModifier(mod, layer, group, _groups);
+
+        /// <summary>
+        /// Adds an attack speed modifier to all attack types, returning the modifier object.
+        /// Does not affect charging speed.
+        /// </summary>
+        /// <param name="mod">The value of the modifier.</param>
+        /// <param name="layer">The layer within the group to place the modifier on.</param>
+        /// <param name="group">The group to put the modifier in. Layers function per-group. Separate groups are multiplied together for the final result.</param>
+        /// <returns>
+        /// The modifier object created.
+        /// </returns>
+        public static IStatModifier AddAnimationModifier(float mod, StackLayer layer = StackLayer.Multiply, string group = DefaultGroup) => AddModifier(mod, layer, group, _animGroups);
 
         /// <summary>
         /// Adds a light attack speed modifier, returning the modifier object.
@@ -56,6 +71,17 @@ namespace ModifierAPI
         /// The modifier object created.
         /// </returns>
         public static IStatModifier AddChargedModifier(float mod, StackLayer layer = StackLayer.Multiply, string group = DefaultGroup) => AddModifier(mod, layer, group, _chargedGroups);
+
+        /// <summary>
+        /// Adds a charged attack speed modifier, excluding charge time, returning the modifier object.
+        /// </summary>
+        /// <param name="mod">The value of the modifier.</param>
+        /// <param name="layer">The layer within the group to place the modifier on.</param>
+        /// <param name="group">The group to put the modifier in. Layers function per-group. Separate groups are multiplied together for the final result.</param>
+        /// <returns>
+        /// The modifier object created.
+        /// </returns>
+        public static IStatModifier AddChargedAnimationModifier(float mod, StackLayer layer = StackLayer.Multiply, string group = DefaultGroup) => AddModifier(mod, layer, group, _chargedAnimGroups);
 
         /// <summary>
         /// Adds a push attack speed modifier, returning the modifier object.
@@ -92,13 +118,15 @@ namespace ModifierAPI
                 or eMeleeWeaponState.AttackChargeReleaseLeft
                 or eMeleeWeaponState.AttackChargeReleaseRight
                 or eMeleeWeaponState.AttackChargeHitLeft
-                or eMeleeWeaponState.AttackChargeHitRight => _chargedMod,
+                or eMeleeWeaponState.AttackChargeHitRight => _chargedMod * _chargedAnimMod,
 
                 eMeleeWeaponState.Push => _pushMod,
                 _ => 1f
             };
-            return stateMod * _mod;
+            return stateMod * _mod * _animMod;
         }
+
+        internal static float GetChargingMod() => _chargedMod * _mod;
 
         internal static void ApplyToWeapon(MeleeWeaponFirstPerson melee)
         {
@@ -109,15 +137,21 @@ namespace ModifierAPI
         internal static void Reset()
         {
             _mod = 1f;
+            _animMod = 1f;
             _lightMod = 1f;
             _chargedMod = 1f;
+            _chargedAnimMod = 1f;
             _pushMod = 1f;
 
             foreach (var group in _groups.Values)
                 group.Reset();
+            foreach (var group in _animGroups.Values)
+                group.Reset();
             foreach (var group in _lightGroups.Values)
                 group.Reset();
             foreach (var group in _chargedGroups.Values)
+                group.Reset();
+            foreach (var group in _chargedAnimGroups.Values)
                 group.Reset();
             foreach (var group in _pushGroups.Values)
                 group.Reset();
@@ -128,8 +162,10 @@ namespace ModifierAPI
         private static void Refresh(bool force = false)
         {
             bool refreshAll = TryRefresh(ref _mod, _groups) || force;
+            refreshAll = TryRefresh(ref _animMod, _animGroups) || refreshAll;
             bool refreshLight = TryRefresh(ref _lightMod, _lightGroups) || refreshAll;
             bool refreshCharged = TryRefresh(ref _chargedMod, _chargedGroups) || refreshAll;
+            refreshCharged = TryRefresh(ref _chargedAnimMod, _chargedAnimGroups) || refreshCharged;
             bool refreshPush = TryRefresh(ref _pushMod, _pushGroups) || refreshAll;
 
             if (_cachedMelee == null) return;
@@ -158,7 +194,7 @@ namespace ModifierAPI
 
         private static void SetLightAttackTimings(MeleeWeaponFirstPerson melee)
         {
-            float mod = 1f / (_mod * _lightMod);
+            float mod = 1f / (_mod * _animMod * _lightMod);
             var states = melee.m_states;
             var animData = melee.MeleeAnimationData;
             CopyMeleeData(states[(int)eMeleeWeaponState.AttackMissLeft].AttackData, animData.FPAttackMissLeft, mod);
@@ -169,7 +205,7 @@ namespace ModifierAPI
 
         private static void SetChargedAttackTimings(MeleeWeaponFirstPerson melee)
         {
-            float mod = 1f / (_mod * _chargedMod);
+            float mod = 1f / (_mod * _animMod * _chargedMod * _chargedAnimMod);
             var states = melee.m_states;
             var animData = melee.MeleeAnimationData;
             CopyMeleeData(states[(int)eMeleeWeaponState.AttackChargeReleaseLeft].AttackData, animData.FPAttackChargeUpReleaseLeft, mod);
@@ -180,7 +216,7 @@ namespace ModifierAPI
 
         private static void SetPushAttackTimings(MeleeWeaponFirstPerson melee)
         {
-            float mod = 1f / (_mod * _pushMod);
+            float mod = 1f / (_mod * _animMod * _pushMod);
             var states = melee.m_states;
             var animData = melee.MeleeAnimationData;
 

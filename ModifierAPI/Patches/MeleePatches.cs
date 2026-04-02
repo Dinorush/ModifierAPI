@@ -63,7 +63,7 @@ namespace ModifierAPI.Patches
         private static void ChargeCallback(MWS_ChargeUp __instance)
         {
             // Any mapped charge state
-            float mod = MeleeAttackSpeedAPI.GetMod(eMeleeWeaponState.AttackChargeReleaseLeft);
+            float mod = MeleeAttackSpeedAPI.GetChargingMod();
             if (mod == 1f) return;
 
             _cacheChargeDiff = __instance.m_maxDamageTime;
