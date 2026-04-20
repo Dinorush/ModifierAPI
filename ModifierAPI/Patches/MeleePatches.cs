@@ -14,6 +14,7 @@ namespace ModifierAPI.Patches
         private static void Post_MeleeSetup(MeleeWeaponFirstPerson __instance)
         {
             MeleeAttackSpeedAPI.ApplyToWeapon(__instance);
+            MeleeRangeAPI.ApplyToWeapon(__instance);
         }
 
         private static MWS_AttackLight? _lightLeft;
