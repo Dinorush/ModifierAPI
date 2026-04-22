@@ -40,6 +40,18 @@ namespace ModifierAPI
         public static void RefreshRange() => SetRange();
 
         /// <summary>
+        /// Sets the range for the current loaded melee archetype.
+        /// </summary>
+        /// <param name="range">The range to set.</param>
+        public static void SetBaseRange(float range)
+        {
+            if (_cachedBlock == null) return;
+
+            _cachedBlock.CameraDamageRayLength = _baseRange = range;
+            SetRange();
+        }
+
+        /// <summary>
         /// Adds an attack speed modifier to all attack types, returning the modifier object.
         /// </summary>
         /// <param name="mod">The value of the modifier.</param>
