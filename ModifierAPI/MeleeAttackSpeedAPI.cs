@@ -1,5 +1,6 @@
 ﻿using GameData;
 using Gear;
+using ModifierAPI.Patches;
 using System;
 using System.Collections.Generic;
 
@@ -16,6 +17,7 @@ namespace ModifierAPI
         private readonly static Dictionary<string, ModifierGroup> _animGroups = new();
         private readonly static Dictionary<string, ModifierGroup> _lightGroups = new();
         private readonly static Dictionary<string, ModifierGroup> _chargedGroups = new();
+        private readonly static Dictionary<string, ModifierGroup> _chargeSpeedGroups = new();
         private readonly static Dictionary<string, ModifierGroup> _chargedAnimGroups = new();
         private readonly static Dictionary<string, ModifierGroup> _pushGroups = new();
 
@@ -23,6 +25,7 @@ namespace ModifierAPI
         private static float _animMod = 1f;
         private static float _lightMod = 1f;
         private static float _chargedMod = 1f;
+        private static float _chargeSpeedMod = 1f;
         private static float _chargedAnimMod = 1f;
         private static float _pushMod = 1f;
         private static MeleeWeaponFirstPerson? _cachedMelee;
@@ -71,6 +74,17 @@ namespace ModifierAPI
         /// The modifier object created.
         /// </returns>
         public static IStatModifier AddChargedModifier(float mod, StackLayer layer = StackLayer.Multiply, string group = DefaultGroup) => AddModifier(mod, layer, group, _chargedGroups);
+
+        /// <summary>
+        /// Adds a charge speed modifier, returning the modifier object.
+        /// </summary>
+        /// <param name="mod">The value of the modifier.</param>
+        /// <param name="layer">The layer within the group to place the modifier on.</param>
+        /// <param name="group">The group to put the modifier in. Layers function per-group. Separate groups are multiplied together for the final result.</param>
+        /// <returns>
+        /// The modifier object created.
+        /// </returns>
+        public static IStatModifier AddChargeSpeedModifier(float mod, StackLayer layer = StackLayer.Multiply, string group = DefaultGroup) => AddModifier(mod, layer, group, _chargeSpeedGroups);
 
         /// <summary>
         /// Adds a charged attack speed modifier, excluding charge time, returning the modifier object.
@@ -126,7 +140,7 @@ namespace ModifierAPI
             return stateMod * _mod * _animMod;
         }
 
-        internal static float GetChargingMod() => _chargedMod * _mod;
+        internal static float GetChargingMod() => _chargedMod * _mod * _chargeSpeedMod;
 
         internal static void ApplyToWeapon(MeleeWeaponFirstPerson melee)
         {
@@ -140,6 +154,7 @@ namespace ModifierAPI
             _animMod = 1f;
             _lightMod = 1f;
             _chargedMod = 1f;
+            _chargeSpeedMod = 1f;
             _chargedAnimMod = 1f;
             _pushMod = 1f;
 
@@ -150,6 +165,8 @@ namespace ModifierAPI
             foreach (var group in _lightGroups.Values)
                 group.Reset();
             foreach (var group in _chargedGroups.Values)
+                group.Reset();
+            foreach (var group in _chargeSpeedGroups.Values)
                 group.Reset();
             foreach (var group in _chargedAnimGroups.Values)
                 group.Reset();
@@ -166,6 +183,7 @@ namespace ModifierAPI
             bool refreshLight = TryRefresh(ref _lightMod, _lightGroups) || refreshAll;
             bool refreshCharged = TryRefresh(ref _chargedMod, _chargedGroups) || refreshAll;
             refreshCharged = TryRefresh(ref _chargedAnimMod, _chargedAnimGroups) || refreshCharged;
+            refreshCharged = TryRefresh(ref _chargeSpeedMod, _chargeSpeedGroups) || refreshCharged;
             bool refreshPush = TryRefresh(ref _pushMod, _pushGroups) || refreshAll;
 
             if (_cachedMelee == null) return;
@@ -212,6 +230,17 @@ namespace ModifierAPI
             CopyMeleeData(states[(int)eMeleeWeaponState.AttackChargeReleaseRight].AttackData, animData.FPAttackChargeUpReleaseRight, mod);
             CopyMeleeData(states[(int)eMeleeWeaponState.AttackChargeHitLeft].AttackData, animData.FPAttackChargeUpHitLeft, mod);
             CopyMeleeData(states[(int)eMeleeWeaponState.AttackChargeHitRight].AttackData, animData.FPAttackChargeUpHitRight, mod);
+
+            switch (melee.CurrentStateName)
+            {
+                case eMeleeWeaponState.AttackChargeUpLeft:
+                case eMeleeWeaponState.AttackChargeUpRight:
+                    break;
+                default:
+                    return;
+            }
+
+            MeleePatches.AdjustChargeTime(melee.CurrentState.Cast<MWS_ChargeUp>());
         }
 
         private static void SetPushAttackTimings(MeleeWeaponFirstPerson melee)

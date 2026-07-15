@@ -58,19 +58,30 @@ namespace ModifierAPI.Patches
         }
 
         private static float _cacheChargeDiff = -1f;
+        private static float _lastMod = 1f;
         [HarmonyPatch(typeof(MWS_ChargeUp), nameof(MWS_ChargeUp.Enter))]
         [HarmonyWrapSafe]
         [HarmonyPostfix]
         private static void ChargeCallback(MWS_ChargeUp __instance)
         {
-            // Any mapped charge state
-            float mod = MeleeAttackSpeedAPI.GetChargingMod();
-            if (mod == 1f) return;
+            AdjustChargeTime(__instance);
+        }
 
-            _cacheChargeDiff = __instance.m_maxDamageTime;
-            __instance.m_maxDamageTime /= mod;
-            _cacheChargeDiff -= __instance.m_maxDamageTime;
-            var animData = __instance.m_weapon.MeleeAnimationData;
+        internal static void AdjustChargeTime(MWS_ChargeUp chargeUp)
+        {
+            float mod = MeleeAttackSpeedAPI.GetChargingMod();
+            if (_lastMod == mod) return;
+
+            var animData = chargeUp.m_weapon.MeleeAnimationData;
+            chargeUp.m_maxDamageTime *= _lastMod / mod;
+            chargeUp.m_startTime += chargeUp.m_elapsed / _lastMod - chargeUp.m_elapsed / mod;
+            if (_cacheChargeDiff != -1)
+            {
+                animData.AutoAttackTime += _cacheChargeDiff;
+                animData.AutoAttackWarningTime += _cacheChargeDiff;
+            }
+
+            _cacheChargeDiff = chargeUp.m_maxDamageTime * mod - chargeUp.m_maxDamageTime;
             animData.AutoAttackTime -= _cacheChargeDiff;
             animData.AutoAttackWarningTime -= _cacheChargeDiff;
         }
@@ -80,6 +91,7 @@ namespace ModifierAPI.Patches
         [HarmonyPostfix]
         private static void RestoreAutoAttackTimings(MWS_ChargeUp __instance)
         {
+            _lastMod = 1f;
             if (_cacheChargeDiff == -1) return;
 
             var animData = __instance.m_weapon.MeleeAnimationData;
